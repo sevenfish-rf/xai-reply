@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XAi Reply Settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="popup-container">
+    <div class="popup-header">
+      <h1>
+        <span class="logo"><img src="icons/icon48.png" alt="XAi Reply Icon" width="48" height="48"></span>
+        XAi Reply
+      </h1>
+    </div>
+
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <button id="generalTab" class="tab-button active">General</button>
+        <button id="xSettingsTab" class="tab-button">X</button>
+        <button id="linkedinSettingsTab" class="tab-button">LinkedIn</button>
+        <button id="draftsTab" class="tab-button">Drafts</button>
+      </div>
+
+      <div id="generalContent" class="tab-content active">
+        <div class="provider-config-group group-section-card">
+          <h2>API Configuration</h2>
+
+          <div class="setting-item-compact">
+            <label for="providerModeSelect">API Provider:</label>
+            <div class="provider-select-row" style="display: flex; gap: 8px; align-items: center;">
+              <select id="providerModeSelect" class="model-select"
+                style="margin-top: 0; flex: 1; border: 1px solid rgba(255, 170, 0, 0.15); background-color: rgba(255, 170, 0, 0.02); color: #e7e9ea; border-radius: 10px; padding: 10px 14px; outline: none; font-size: 14px;">
+                <option value="openrouter">OpenRouter</option>
+                <option value="add-new-custom">+ Add Custom Provider...</option>
+              </select>
+              <button id="deleteProviderButton" class="template-action-button delete"
+                style="display: none; height: 38px; padding: 0 12px; border-radius: 10px; border-color: rgba(244, 33, 46, 0.25); color: #f4212e;"
+                type="button">Delete</button>
+            </div>
+          </div>
+
+          <!-- OpenRouter API Key Input -->
+          <div class="api-key-section" id="openrouterKeySection">
+            <label for="openrouterApiKey">OpenRouter API Key:</label>
+            <input type="password" id="openrouterApiKey" class="api-key-input" placeholder="sk-or-v1-..." />
+          </div>
+
+          <!-- Add New Custom Provider Form -->
+          <div id="newCustomProviderForm"
+            style="display: none; border-top: 1px solid rgba(255,170,0,0.1); margin-top: 12px; padding-top: 12px; flex-direction: column; gap: 12px;">
+            <div class="setting-item-compact">
+              <label for="customProviderName">Provider Name:</label>
+              <input type="text" id="customProviderName" class="api-key-input"
+                placeholder="e.g. Local Ollama, DeepSeek" />
+            </div>
+            <div class="setting-item-compact">
+              <label for="customBaseUrl">Base URL:</label>
+              <input type="text" id="customBaseUrl" class="text-input" placeholder="e.g. http://localhost:11434/v1"
+                style="background-color: rgba(255, 170, 0, 0.02); border: 1px solid rgba(255, 170, 0, 0.15); border-radius: 10px; padding: 10px 14px; color: #e7e9ea;" />
+            </div>
+            <div class="setting-item-compact">
+              <label for="customApiKey">API Key (Optional):</label>
+              <input type="password" id="customApiKey" class="api-key-input" placeholder="API Key if required" />
+            </div>
+            <button id="saveCustomProviderButton" class="reset-button" style="margin-top: 4px;" type="button">Save
+              Custom Provider</button>
+          </div>
+
+          <!-- Model Section -->
+          <div class="model-section"
+            style="margin-top: 16px; border-top: 1px solid rgba(255,170,0,0.1); padding-top: 16px;">
+            <div class="model-header-row">
+              <label for="modelSelect" id="modelLabel">LLM Model:</label>
+              <div class="model-controls">
+                <button id="fetchModelsButton" class="fetch-button" type="button">Fetch Models</button>
+                <label class="manual-model-checkbox-label">
+                  <input type="checkbox" id="manualModelToggle"> Manual
+                </label>
+              </div>
+            </div>
+
+            <!-- Model selection dropdown -->
+            <div id="modelSelectContainer">
+              <select id="modelSelect" class="model-select">
+                <option value="openai/gpt-4o-mini" selected>GPT-4o Mini</option>
+                <option value="openai/gpt-4o">GPT-4o</option>
+                <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                <option value="google/gemini-pro">Gemini Pro</option>
+              </select>
+            </div>
+
+            <!-- Manual model input -->
+            <div id="modelManualContainer" style="display: none;">
+              <input type="text" id="modelManualInput" class="text-input" placeholder="e.g. deepseek-chat"
+                style="background-color: rgba(255, 170, 0, 0.02); border: 1px solid rgba(255, 170, 0, 0.15); border-radius: 10px; padding: 10px 14px; color: #e7e9ea;" />
+            </div>
+
+            <div id="modelDescription" class="model-description"></div>
+          </div>
+        </div>
+
+        <div class="api-key-section">
+          <button id="saveButton" class="save-button">Save Settings</button>
+          <div id="statusMessage" class="status-message" style="display: none;"></div>
+        </div>
+
+        <div class="github-section">
+          <div class="github-link">
+            <a href="https://github.com/" target="_blank" class="github-button">
+              <svg class="github-icon" viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor"
+                  d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+              </svg>
+              Star on GitHub
+            </a>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h2>Quick Start:</h2>
+          <p>1. Get an API key (OpenRouter or local/custom provider)</p>
+          <p>2. Select or type in your preferred LLM model</p>
+          <p>3. Configure platform prompts & settings in X or LinkedIn tabs</p>
+          <p>4. Click template buttons to auto-generate replies!</p>
+        </div>
+      </div>
+
+      <!-- X Settings Tab -->
+      <div id="xSettingsContent" class="tab-content">
+        <div class="prompt-section">
+          <label for="xSystemPrompt">X System Prompt:</label>
+          <textarea id="xSystemPrompt" class="system-prompt-input" rows="4"
+            placeholder="System prompt for X replies..."></textarea>
+          <button id="resetXPromptButton" class="reset-button">Reset to Default</button>
+        </div>
+
+        <div class="advanced-settings">
+          <button class="advanced-toggle" id="xAdvancedToggle">
+            <span class="toggle-icon">▶</span> Advanced Settings
+          </button>
+
+          <div class="advanced-content" id="xAdvancedContent" style="display: none;">
+            <div class="setting-item">
+              <label for="xTemperature">Temperature:</label>
+              <div class="setting-control">
+                <input type="range" id="xTemperature" min="0" max="2" step="0.1" value="0.5" class="slider" />
+                <span class="setting-value" id="xTemperatureValue">0.5</span>
+              </div>
+              <small class="setting-description">Higher values make output more random, lower values more
+                focused.</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="xMaxTokens">Max Tokens:</label>
+              <div class="setting-control">
+                <input type="number" id="xMaxTokens" min="1" max="2000" value="40" class="number-input" />
+              </div>
+              <small class="setting-description">Maximum length of generated responses.</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="xPresencePenalty">Presence Penalty:</label>
+              <div class="setting-control">
+                <input type="range" id="xPresencePenalty" min="-2" max="2" step="0.1" value="0.6" class="slider" />
+                <span class="setting-value" id="xPresencePenaltyValue">0.6</span>
+              </div>
+              <small class="setting-description">Higher values increase the model's likelihood to talk about new
+                topics.</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="xFrequencyPenalty">Frequency Penalty:</label>
+              <div class="setting-control">
+                <input type="range" id="xFrequencyPenalty" min="-2" max="2" step="0.1" value="0.3" class="slider" />
+                <span class="setting-value" id="xFrequencyPenaltyValue">0.3</span>
+              </div>
+              <small class="setting-description">Higher values decrease the model's likelihood to repeat itself.</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="xTypingSpeed">Typing Speed (ms):</label>
+              <div class="setting-control">
+                <input type="range" id="xTypingSpeed" min="0" max="100" step="5" value="5" class="slider" />
+                <span class="setting-value" id="xTypingSpeedValue">5</span>
+              </div>
+              <small class="setting-description">Delay between characters. Higher values make typing appear more
+                human-like.</small>
+            </div>
+
+            <button id="resetXAdvancedButton" class="reset-button">Reset to Defaults</button>
+          </div>
+        </div>
+
+        <div class="templates-section">
+          <h3>X Reply Templates</h3>
+          <div class="templates-list" id="xTemplatesList"></div>
+          <button id="addXTemplateButton" class="add-button">Add Template</button>
+          <button id="resetXTemplatesButton" class="reset-button">Reset to Defaults</button>
+        </div>
+      </div>
+
+      <!-- LinkedIn Settings Tab -->
+      <div id="linkedinSettingsContent" class="tab-content">
+        <div class="prompt-section">
+          <label for="linkedinSystemPrompt">LinkedIn System Prompt:</label>
+          <textarea id="linkedinSystemPrompt" class="system-prompt-input" rows="4"
+            placeholder="System prompt for LinkedIn replies..."></textarea>
+          <button id="resetLinkedInPromptButton" class="reset-button">Reset to Default</button>
+        </div>
+
+        <div class="advanced-settings">
+          <button class="advanced-toggle" id="linkedinAdvancedToggle">
+            <span class="toggle-icon">▶</span> Advanced Settings
+          </button>
+
+          <div class="advanced-content" id="linkedinAdvancedContent" style="display: none;">
+            <div class="setting-item">
+              <label for="linkedinTemperature">Temperature:</label>
+              <div class="setting-control">
+                <input type="range" id="linkedinTemperature" min="0" max="2" step="0.1" value="0.5" class="slider" />
+                <span class="setting-value" id="linkedinTemperatureValue">0.5</span>
+              </div>
+              <small class="setting-description">Higher values make output more random, lower values more
+                focused.</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="linkedinMaxTokens">Max Tokens:</label>
+              <div class="setting-control">
+                <input type="number" id="linkedinMaxTokens" min="1" max="2000" value="60" class="number-input" />
+              </div>
+              <small class="setting-description">Maximum length of generated responses.</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="linkedinPresencePenalty">Presence Penalty:</label>
+              <div class="setting-control">
+                <input type="range" id="linkedinPresencePenalty" min="-2" max="2" step="0.1" value="0.6"
+                  class="slider" />
+                <span class="setting-value" id="linkedinPresencePenaltyValue">0.6</span>
+              </div>
+              <small class="setting-description">Higher values increase the model's likelihood to talk about new
+                topics.</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="linkedinFrequencyPenalty">Frequency Penalty:</label>
+              <div class="setting-control">
+                <input type="range" id="linkedinFrequencyPenalty" min="-2" max="2" step="0.1" value="0.3"
+                  class="slider" />
+                <span class="setting-value" id="linkedinFrequencyPenaltyValue">0.3</span>
+              </div>
+              <small class="setting-description">Higher values decrease the model's likelihood to repeat itself.</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="linkedinTypingSpeed">Typing Speed (ms):</label>
+              <div class="setting-control">
+                <input type="range" id="linkedinTypingSpeed" min="0" max="100" step="5" value="5" class="slider" />
+                <span class="setting-value" id="linkedinTypingSpeedValue">5</span>
+              </div>
+              <small class="setting-description">Delay between characters. Higher values make typing appear more
+                human-like.</small>
+            </div>
+
+            <button id="resetLinkedInAdvancedButton" class="reset-button">Reset to Defaults</button>
+          </div>
+        </div>
+
+        <div class="templates-section">
+          <div class="template-subsection">
+            <h3>Connection Templates</h3>
+            <div class="templates-list" id="linkedinConnectionTemplatesList"></div>
+            <button id="addLinkedInConnectionTemplateButton" class="add-button">Add Connection Template</button>
+            <button id="resetLinkedInConnectionTemplatesButton" class="reset-button">Reset to Defaults</button>
+          </div>
+
+          <div class="template-subsection">
+            <h3>Post Reply Templates</h3>
+            <div class="templates-list" id="linkedinPostTemplatesList"></div>
+            <button id="addLinkedInPostTemplateButton" class="add-button">Add Post Template</button>
+            <button id="resetLinkedInPostTemplatesButton" class="reset-button">Reset to Defaults</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drafts Tab -->
+      <div id="draftsContent" class="tab-content">
+        <div class="drafts-section">
+          <div class="drafts-header" style="display: flex; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0;">Saved Drafts</h3>
+            <button id="clearAllDraftsButton" class="reset-button"
+              style="margin-left: auto; margin-top: 0; padding: 4px 10px; font-size: 11px;">Clear All</button>
+          </div>
+          <div class="drafts-list" id="draftsList">
+            <div class="no-drafts-message"
+              style="color: #707880; font-size: 13px; text-align: center; padding: 30px 10px;">
+              No saved drafts yet. Click "Save Draft" in X when generating replies.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>
