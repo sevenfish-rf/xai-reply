@@ -481,57 +481,82 @@ class XAiReplyLinkedIn {
         buttonContainer.innerHTML = `
             <div class="reply-bot-header">
                 <span class="reply-bot-title">✨ XAi Reply</span>
-                <button class="reply-bot-close-btn" title="Hide assistant">×</button>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <button class="reply-bot-toggle-btn" title="Minimize" type="button"><svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button class="reply-bot-close-btn" title="Hide assistant" type="button"><svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
             </div>
             
-            <div class="reply-bot-prompt-section">
-                <input type="text" class="reply-bot-custom-input" placeholder="Instruct AI (e.g. 'make it witty', 'reply in Spanish')..." />
-                <button class="reply-bot-custom-go" title="Generate with custom instructions">Go</button>
-            </div>
+            <div class="reply-bot-body">
+                <div class="reply-bot-prompt-section">
+                    <input type="text" class="reply-bot-custom-input" placeholder="Instruct AI (e.g. 'make it witty', 'reply in Spanish')..." />
+                    <button class="reply-bot-custom-go" title="Generate with custom instructions">Go</button>
+                </div>
 
-            <div class="reply-bot-options-row">
-                <div class="reply-bot-option-group">
-                    <span class="reply-bot-option-label">Length:</span>
-                    <div class="reply-bot-option-pills">
-                        <button class="reply-bot-option-pill active" data-length="short">Short</button>
-                        <button class="reply-bot-option-pill" data-length="medium">Medium</button>
-                        <button class="reply-bot-option-pill" data-length="long">Long</button>
+                <div class="reply-bot-options-row">
+                    <div class="reply-bot-option-group">
+                        <span class="reply-bot-option-label">Length:</span>
+                        <div class="reply-bot-option-pills">
+                            <button class="reply-bot-option-pill active" data-length="short">Short</button>
+                            <button class="reply-bot-option-pill" data-length="medium">Medium</button>
+                            <button class="reply-bot-option-pill" data-length="long">Long</button>
+                        </div>
+                    </div>
+
+                    <div class="reply-bot-option-group">
+                        <span class="reply-bot-option-label">Lang:</span>
+                        <select class="reply-bot-option-select reply-bot-lang-select">
+                            <option value="auto" selected>Auto</option>
+                            <option value="English">EN</option>
+                            <option value="Indonesian">ID</option>
+                            <option value="Japanese">JP</option>
+                            <option value="Spanish">ES</option>
+                            <option value="Chinese">ZH</option>
+                        </select>
+                    </div>
+
+                    <div class="reply-bot-option-group" style="flex: 1; min-width: 80px;">
+                        <span class="reply-bot-option-label">Model:</span>
+                        <select class="reply-bot-option-select reply-bot-model-select" style="width: 100%;">
+                        </select>
                     </div>
                 </div>
 
-                <div class="reply-bot-option-group">
-                    <span class="reply-bot-option-label">Lang:</span>
-                    <select class="reply-bot-option-select reply-bot-lang-select">
-                        <option value="auto" selected>Auto</option>
-                        <option value="English">EN</option>
-                        <option value="Indonesian">ID</option>
-                        <option value="Japanese">JP</option>
-                        <option value="Spanish">ES</option>
-                        <option value="Chinese">ZH</option>
-                    </select>
+                <div class="reply-bot-templates-section">
+                    <div class="reply-bot-templates-tabs">
+                        <button class="reply-bot-templates-tab active" data-category="positive" type="button">✨ Positive</button>
+                        <button class="reply-bot-templates-tab" data-category="brainy" type="button">💡 Brainy</button>
+                        <button class="reply-bot-templates-tab" data-category="spiced" type="button">🔥 Spiced</button>
+                    </div>
+                    <div class="reply-bot-templates-grid"></div>
                 </div>
-
-                <div class="reply-bot-option-group" style="flex: 1; min-width: 80px;">
-                    <span class="reply-bot-option-label">Model:</span>
-                    <select class="reply-bot-option-select reply-bot-model-select" style="width: 100%;">
-                    </select>
+                
+                <div class="reply-bot-footer">
+                    <button class="reply-bot-draft-btn" style="display: none;" title="Save generated response as draft">💾 Save Draft</button>
+                    <div class="reply-bot-usage" style="display: none;"></div>
                 </div>
-            </div>
-
-            <div class="reply-bot-templates-section">
-                <div class="reply-bot-templates-tabs">
-                    <button class="reply-bot-templates-tab active" data-category="positive" type="button">✨ Positive</button>
-                    <button class="reply-bot-templates-tab" data-category="brainy" type="button">💡 Brainy</button>
-                    <button class="reply-bot-templates-tab" data-category="spiced" type="button">🔥 Spiced</button>
-                </div>
-                <div class="reply-bot-templates-grid"></div>
-            </div>
-            
-            <div class="reply-bot-footer">
-                <button class="reply-bot-draft-btn" style="display: none;" title="Save generated response as draft">💾 Save Draft</button>
-                <div class="reply-bot-usage" style="display: none;"></div>
             </div>
         `;
+
+        // Toggle minimize/maximize action
+        const toggleBtn = buttonContainer.querySelector('.reply-bot-toggle-btn') as HTMLButtonElement;
+        const botBody = buttonContainer.querySelector('.reply-bot-body') as HTMLElement;
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const isCollapsed = buttonContainer.classList.contains('collapsed');
+            if (isCollapsed) {
+                botBody.style.display = '';
+                toggleBtn.innerHTML = `<svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
+                toggleBtn.title = 'Minimize';
+                buttonContainer.classList.remove('collapsed');
+            } else {
+                botBody.style.display = 'none';
+                toggleBtn.innerHTML = `<svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>`;
+                toggleBtn.title = 'Maximize';
+                buttonContainer.classList.add('collapsed');
+            }
+        });
 
         // Close button action
         const closeBtn = buttonContainer.querySelector('.reply-bot-close-btn') as HTMLButtonElement;

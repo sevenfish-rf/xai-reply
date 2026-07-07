@@ -88,6 +88,18 @@ body[style*="background-color: rgb(0, 0, 0)"] .reply-bot-container {
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 0 12px rgba(255, 170, 0, 0.04);
 }
 
+/* Collapsed assistant state styling */
+.reply-bot-container.collapsed {
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+.reply-bot-container.collapsed .reply-bot-header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 /* Header */
 .reply-bot-header {
   display: flex;
@@ -96,6 +108,8 @@ body[style*="background-color: rgb(0, 0, 0)"] .reply-bot-container {
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  height: 36px !important;
+  box-sizing: border-box !important;
 }
 
 @media (prefers-color-scheme: light) {
@@ -119,18 +133,20 @@ body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-header {
   gap: 6px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  height: 28px !important;
+  box-sizing: border-box !important;
 }
 
 .reply-bot-close-btn {
   background: transparent;
   border: none;
   color: #536471;
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
-  padding: 2px 6px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  line-height: 1;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
@@ -148,6 +164,36 @@ body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-header {
 }
 
 body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-close-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.reply-bot-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #536471;
+  font-size: 13px;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.reply-bot-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffaa00;
+}
+
+@media (prefers-color-scheme: light) {
+  .reply-bot-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+
+body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-toggle-btn:hover {
   background: rgba(0, 0, 0, 0.05);
 }
 
@@ -228,18 +274,20 @@ body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-custom-input:focu
 
 /* Options Row */
 .reply-bot-options-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-  margin-bottom: 14px;
-  padding: 0 4px;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px 12px !important;
+  margin-bottom: 14px !important;
+  padding: 0 4px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .reply-bot-option-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 1 !important;
 }
 
 .reply-bot-option-label {
@@ -319,18 +367,35 @@ body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-option-pill.activ
 
 /* Option Select Dropdown */
 .reply-bot-option-select {
-  background: rgba(255, 255, 255, 0.05);
-  color: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 4px 8px;
-  font-size: 11px;
-  outline: none;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  min-width: 60px;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: inherit !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  padding: 4px 24px 4px 8px !important;
+  font-size: 11px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  outline: none !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 1 !important;
+  min-width: 70px !important;
+  max-width: 120px !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  height: 24px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  
+  /* Custom arrow to prevent site override offset */
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%238b98a5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
 }
 
 .reply-bot-option-select:focus {
@@ -346,8 +411,8 @@ body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-option-pill.activ
 
 @media (prefers-color-scheme: light) {
   .reply-bot-option-select {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.03) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
   }
 
   .reply-bot-option-select option {
@@ -357,9 +422,9 @@ body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-option-pill.activ
 }
 
 body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-option-select {
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: #0f1419;
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #0f1419 !important;
 }
 
 body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-option-select option {
