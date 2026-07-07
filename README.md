@@ -4,6 +4,16 @@ A Chrome extension that lets you generate context-aware replies on **X (Twitter)
 
 Built with a clean dark theme, support for custom API providers (like Ollama, LM Studio, DeepSeek, or OpenRouter), model list caching, and custom templates.
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots/main-demo.png" width="18%" alt="Main Demo" />
+  <img src="screenshots/settings.png" width="18%" alt="Settings" />
+  <img src="screenshots/templates.png" width="18%" alt="Templates" />
+  <img src="screenshots/advanced-settings.png" width="18%" alt="Advanced Settings" />
+  <img src="screenshots/load-extension.png" width="18%" alt="Load Extension" />
+</p>
+
 ---
 
 ## 🎨 UI 
@@ -37,9 +47,14 @@ Injects a small template selector next to reply inputs on:
 *   Save generated replies to a local drafts list.
 *   View, copy, or clean up your saved drafts in the **Drafts** tab.
 
-### 6. Fine-Tuning
-*   Quickly adjust Temperature, Max Tokens, Presence Penalty, Frequency Penalty, and Typing Speed simulator.
-*   Check the "Manual" box if you want to type in a custom model name directly.
+### 6. Advanced Settings & Fine-Tuning
+Under the **X (Twitter)** and **LinkedIn** tabs, you can expand **Advanced Settings** to fine-tune the model parameters for each platform individually:
+*   **Temperature** (0.0 - 2.0): Controls response randomness. Lower values (e.g., 0.3) make output focused and predictable; higher values (e.g., 0.9) increase creativity.
+*   **Max Tokens**: Restricts the maximum length of generated replies to keep API costs predictable.
+*   **Presence Penalty** (-2.0 - 2.0): Positive values encourage the model to discuss new topics; negative values keep it closely aligned with the exact context.
+*   **Frequency Penalty** (-2.0 - 2.0): Positive values penalize repeating the same words or phrases, forcing more vocabulary variation.
+*   **Typing Speed** (ms): Simulates human typing speed character-by-character on the target text area (e.g., 5ms per char). Set to `0` for instant insertion.
+*   **Manual Model Overrides**: Check the "Manual" box next to the model dropdown to type in any local or custom model name directly.
 
 ---
 
