@@ -7,11 +7,11 @@ Built with a clean dark theme, support for custom API providers (like Ollama, LM
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="screenshots/main-demo.png" width="18%" alt="Main Demo" />
-  <img src="screenshots/settings.png" width="18%" alt="Settings" />
-  <img src="screenshots/templates.png" width="18%" alt="Templates" />
-  <img src="screenshots/advanced-settings.png" width="18%" alt="Advanced Settings" />
-  <img src="screenshots/load-extension.png" width="18%" alt="Load Extension" />
+  <img src="screenshots/Screenshots (0).png" width="18%" alt="Demo 1" />
+  <img src="screenshots/Screenshots (1).png" width="18%" alt="Demo 2" />
+  <img src="screenshots/Screenshots (2).png" width="18%" alt="Demo 3" />
+  <img src="screenshots/Screenshots (3).png" width="18%" alt="Demo 4" />
+  <img src="screenshots/Screenshots (4).png" width="18%" alt="Demo 5" />
 </p>
 
 ---
