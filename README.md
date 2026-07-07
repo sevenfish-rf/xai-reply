@@ -1,4 +1,4 @@
-# ✨ XAI Reply
+# XAI Reply
 
 A Chrome extension that lets you generate context-aware replies on **X (Twitter)** and **LinkedIn** using AI. 
 
@@ -16,7 +16,7 @@ Built with a clean dark theme, support for custom API providers (like Ollama, LM
 
 ---
 
-## 🎨 UI 
+## UI 
 *   **Dark theme by default**: Space-black background with a subtle blue/orange gradient header and warm yellow highlights.
 *   **Compact settings layout**: Settings rows are inspired by clean iOS settings menus to keep things neat and avoid scrolling fatigue.
 *   **Centered layouts**: Everything is set to `border-box` and flex-centered to prevent layouts from breaking or clipping.
