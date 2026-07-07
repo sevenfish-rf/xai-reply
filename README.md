@@ -6,7 +6,7 @@ Built with a clean dark theme, support for custom API providers (like Ollama, LM
 
 ---
 
-## 🎨 UI & Aesthetics
+## 🎨 UI 
 *   **Dark theme by default**: Space-black background with a subtle blue/orange gradient header and warm yellow highlights.
 *   **Compact settings layout**: Settings rows are inspired by clean iOS settings menus to keep things neat and avoid scrolling fatigue.
 *   **Centered layouts**: Everything is set to `border-box` and flex-centered to prevent layouts from breaking or clipping.
@@ -59,7 +59,7 @@ Injects a small template selector next to reply inputs on:
 ### Loading to Chrome
 1. Go to `chrome://extensions/` in your browser.
 2. Turn on **Developer mode** (top-right toggle).
-3. Click **Load unpacked** and select this directory.
+3. Click **Load unpacked** and select the **`dist`** folder inside this project directory.
 
 ---
 
