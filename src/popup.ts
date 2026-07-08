@@ -42,6 +42,7 @@ class PopupManager {
     private importButton!: HTMLButtonElement;
     private importFileInput!: HTMLInputElement;
     private settingsStatus!: HTMLElement;
+    private xaiNotesToggle!: HTMLInputElement;
 
     // X Settings
     private xSystemPromptInput!: HTMLTextAreaElement;
@@ -146,6 +147,7 @@ class PopupManager {
         this.importButton = document.getElementById('importButton') as HTMLButtonElement;
         this.importFileInput = document.getElementById('importFileInput') as HTMLInputElement;
         this.settingsStatus = document.getElementById('settingsStatus') as HTMLElement;
+        this.xaiNotesToggle = document.getElementById('xaiNotesToggle') as HTMLInputElement;
 
         // X Settings elements
         this.xSystemPromptInput = document.getElementById('xSystemPrompt') as HTMLTextAreaElement;
@@ -251,6 +253,12 @@ class PopupManager {
         this.importButton.addEventListener('click', () => this.importFileInput.click());
         this.importFileInput.addEventListener('change', (e) => this.handleImportFile(e));
 
+        this.xaiNotesToggle.addEventListener('change', async () => {
+            const enabled = this.xaiNotesToggle.checked;
+            await chrome.storage.sync.set({ xaiNotesEnabled: enabled });
+            this.showStatus(enabled ? 'XAi Notes enabled!' : 'XAi Notes disabled!', 'success');
+        });
+
         // X Settings listeners
         this.xSystemPromptInput.addEventListener('change', () => this.saveXSettings());
         this.resetXPromptButton.addEventListener('click', () => this.resetXSystemPrompt());
@@ -308,8 +316,12 @@ class PopupManager {
                 'model',
                 'xSettings',
                 'linkedinSettings',
-                'customProviders'
+                'customProviders',
+                'xaiNotesEnabled'
             ]);
+
+            // Set notes toggle checked state
+            this.xaiNotesToggle.checked = !!result.xaiNotesEnabled;
 
             // Custom providers list
             this.customProviders = result.customProviders || [];

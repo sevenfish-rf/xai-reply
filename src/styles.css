@@ -1829,3 +1829,452 @@ body.dark .draft-reply-text {
   color: #f4212e;
   border: 1px solid rgba(244, 33, 46, 0.2);
 }
+
+/* ── XAi Notes Sidebar & Floating Box Styling ───────── */
+.xai-notes-container {
+  display: flex;
+  flex-direction: column;
+  background: #15202b; /* Twitter Dim Background */
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e7e9ea;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  z-index: 99999;
+  box-sizing: border-box;
+}
+
+.xai-notes-container.layout-sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 350px !important;
+  height: 100vh !important;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+}
+
+.xai-notes-container.layout-floating {
+  position: fixed;
+  width: 360px !important;
+  max-height: 80vh !important;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 170, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+/* Header */
+.xai-notes-header {
+  padding: 14px 14px 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  user-select: none;
+}
+
+.layout-floating .xai-notes-header {
+  cursor: move;
+}
+
+.xai-notes-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.xai-notes-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffaa00;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xai-notes-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.xai-notes-layout-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 12px;
+  color: #ffaa00;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.xai-notes-layout-toggle:hover {
+  background: rgba(255, 170, 0, 0.15);
+}
+
+.xai-notes-close {
+  background: transparent;
+  border: none;
+  color: #8b98a5;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.xai-notes-close:hover {
+  background: rgba(244, 33, 46, 0.1);
+  color: #f4212e;
+}
+
+/* Sessions Bar */
+.xai-notes-sessions-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.xai-notes-new-session-btn {
+  background: rgba(29, 155, 240, 0.1);
+  border: 1px dashed rgba(29, 155, 240, 0.4);
+  color: #1d9bf0;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.xai-notes-new-session-btn:hover {
+  background: rgba(29, 155, 240, 0.2);
+}
+
+.xai-notes-clear-btn {
+  background: transparent;
+  border: 1px solid rgba(244, 33, 46, 0.2);
+  color: #f4212e;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.xai-notes-clear-btn:hover {
+  background: rgba(244, 33, 46, 0.1);
+}
+
+.xai-notes-sessions-badges {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none; /* Firefox */
+  flex: 1;
+}
+
+.xai-notes-sessions-badges::-webkit-scrollbar {
+  display: none; /* Safari/Chrome */
+}
+
+.xai-notes-session-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  gap: 4px;
+  transition: all 0.2s ease;
+  max-width: 90px;
+}
+
+.xai-notes-session-badge .session-name-text {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.xai-notes-session-badge.active {
+  background: rgba(255, 170, 0, 0.12);
+  border-color: #ffaa00;
+  color: #ffaa00;
+  font-weight: 700;
+}
+
+.session-badge-delete {
+  background: transparent;
+  border: none;
+  color: #8b98a5;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.session-badge-delete:hover {
+  color: #f4212e;
+}
+
+/* Body Content */
+.xai-notes-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.layout-floating .xai-notes-body {
+  max-height: 400px;
+}
+
+.xai-notes-empty-state {
+  color: #8b98a5;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.5;
+  padding: 40px 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+/* Tweet Cards */
+.xai-notes-tweet-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s;
+}
+
+.xai-notes-tweet-card:hover {
+  border-color: rgba(255, 170, 0, 0.3);
+}
+
+.xai-notes-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.xai-notes-card-author {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e7e9ea;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 85%;
+}
+
+.xai-notes-card-author .author-handle {
+  font-weight: 400;
+  color: #8b98a5;
+  font-size: 11px;
+}
+
+.xai-notes-card-delete {
+  background: transparent;
+  border: none;
+  color: #8b98a5;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.xai-notes-card-delete:hover {
+  color: #f4212e;
+}
+
+.xai-notes-card-body {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #d0d3d4;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.xai-notes-card-footer {
+  text-align: right;
+}
+
+.xai-notes-card-footer a {
+  font-size: 10px;
+  color: #ffaa00;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.xai-notes-card-footer a:hover {
+  text-decoration: underline;
+}
+
+/* AI Output Section */
+.xai-notes-ai-output-section {
+  background: rgba(0, 186, 124, 0.05);
+  border: 1px solid rgba(0, 186, 124, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 6px;
+}
+
+.xai-notes-ai-output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #00ba7c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.xai-notes-ai-output-copy {
+  background: transparent;
+  border: 1px solid rgba(0, 186, 124, 0.3);
+  color: #00ba7c;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.xai-notes-ai-output-copy:hover {
+  background: rgba(0, 186, 124, 0.1);
+}
+
+.xai-notes-ai-output-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e7e9ea;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Footer Section */
+.xai-notes-footer {
+  padding: 12px 14px 14px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.xai-notes-prompt-container {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 10px;
+}
+
+.xai-notes-prompt-input {
+  width: 100%;
+  height: 52px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: #e7e9ea;
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.4;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.xai-notes-prompt-input::placeholder {
+  color: #71767b;
+}
+
+.xai-notes-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.xai-notes-model-select {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #e7e9ea !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 10px !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  outline: none;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.xai-notes-generate-btn {
+  background: linear-gradient(135deg, #1d9bf0, #ffaa00);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(29, 155, 240, 0.2);
+  transition: all 0.2s;
+}
+
+.xai-notes-generate-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 170, 0, 0.25);
+}
+
+.xai-notes-generate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Grab It Action Button on Timeline ───────────────── */
+.xai-notes-grab-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.xai-notes-grab-btn {
+  background: transparent;
+  border: none;
+  color: #71767b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.xai-notes-grab-btn:hover {
+  background: rgba(255, 170, 0, 0.1);
+  color: #ffaa00;
+}
+
+.xai-notes-grab-btn svg {
+  stroke: currentColor;
+}

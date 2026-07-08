@@ -1,11 +1,18 @@
 // Content script for XAi Reply (X/Twitter)
-import { DEFAULT_X_TEMPLATES, GenerateReplyRequest, GenerateReplyResponse, ReplyTemplate, PlatformSettings, OPENROUTER_MODELS } from './types';
+import { DEFAULT_X_TEMPLATES, GenerateReplyRequest, GenerateReplyResponse, ReplyTemplate, PlatformSettings, OPENROUTER_MODELS, GrabbedTweet, NoteSession, NotesSettings } from './types';
 
 class XAiReply {
     private templates: ReplyTemplate[] = DEFAULT_X_TEMPLATES;
     private buttonsInjected = new WeakSet<HTMLElement>();
     private observer: MutationObserver | null = null;
     private lastGeneration: { template: ReplyTemplate; textArea: HTMLElement; customInstruction?: string } | null = null;
+
+    // XAi Notes state
+    private notesEnabled = false;
+    private notesSettings: NotesSettings = { enabled: false, layout: 'sidebar' };
+    private notesSessions: NoteSession[] = [];
+    private activeSessionId = '';
+    private notesContainerEl: HTMLElement | null = null;
 
     constructor() {
         this.init();
@@ -18,8 +25,8 @@ class XAiReply {
         // Load X-specific settings and provider config from storage
         try {
             const [syncRes, localRes] = await Promise.all([
-                chrome.storage.sync.get(['xSettings', 'providerConfig']),
-                chrome.storage.local.get(['fetchedModels'])
+                chrome.storage.sync.get(['xSettings', 'providerConfig', 'xaiNotesEnabled', 'xaiNotesSettings']),
+                chrome.storage.local.get(['fetchedModels', 'xaiNotesSessions', 'xaiActiveSessionId'])
             ]);
 
             if (syncRes.xSettings?.templates) {
@@ -27,9 +34,45 @@ class XAiReply {
             }
             this.providerConfig = syncRes.providerConfig || null;
             this.cachedModels = localRes.fetchedModels || [];
+
+            // Load XAi Notes configuration
+            this.notesEnabled = !!syncRes.xaiNotesEnabled;
+            this.notesSettings = syncRes.xaiNotesSettings || { enabled: this.notesEnabled, layout: 'sidebar' };
+            this.notesSessions = localRes.xaiNotesSessions || [];
+            this.activeSessionId = localRes.xaiActiveSessionId || '';
+
+            if (this.notesEnabled) {
+                await this.initNotesState();
+                this.renderNotesBox();
+            }
         } catch (err) {
             console.error('XAi Reply: Failed to load config', err);
         }
+
+        // Listen for storage changes reactively
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName === 'sync') {
+                if (changes.xaiNotesEnabled) {
+                    this.notesEnabled = !!changes.xaiNotesEnabled.newValue;
+                    this.notesSettings.enabled = this.notesEnabled;
+                    this.handleNotesEnabledChange();
+                }
+                if (changes.xaiNotesSettings) {
+                    this.notesSettings = changes.xaiNotesSettings.newValue || { enabled: this.notesEnabled, layout: 'sidebar' };
+                    this.updateNotesBoxStyleAndLayout();
+                }
+            }
+            if (areaName === 'local') {
+                if (changes.xaiNotesSessions) {
+                    this.notesSessions = changes.xaiNotesSessions.newValue || [];
+                    this.refreshNotesBoxContent();
+                }
+                if (changes.xaiActiveSessionId) {
+                    this.activeSessionId = changes.xaiActiveSessionId.newValue || '';
+                    this.refreshNotesBoxContent();
+                }
+            }
+        });
 
         // Listen for focus events on the page
         this.setupFocusListener();
@@ -72,8 +115,11 @@ class XAiReply {
             subtree: true
         });
 
-        // Initial check for any existing reply buttons
+        // Initial check for any existing reply buttons and tweets
         this.checkForReplyButton(document.body);
+        if (this.notesEnabled) {
+            this.injectGrabButtonsGlobal();
+        }
     }
 
     private checkForReplyButton(node: HTMLElement) {
@@ -87,6 +133,11 @@ class XAiReply {
         // Also check if the node itself is a reply button
         if (node.getAttribute('data-testid') === 'tweetButtonInline') {
             this.injectButtonsNearReplyButton(node);
+        }
+
+        // Also check for tweets to inject Grab button
+        if (this.notesEnabled) {
+            this.checkNodeForTweets(node);
         }
     }
 
@@ -891,6 +942,561 @@ class XAiReply {
             range.collapse(false);
             selection.removeAllRanges();
             selection.addRange(range);
+        }
+    }
+
+    // ── XAi Notes Implementation Methods ───────────────────────
+
+    private async initNotesState() {
+        // Load sessions
+        const localRes = await chrome.storage.local.get(['xaiNotesSessions', 'xaiActiveSessionId']);
+        this.notesSessions = localRes.xaiNotesSessions || [];
+        this.activeSessionId = localRes.xaiActiveSessionId || '';
+
+        if (this.notesSessions.length === 0) {
+            const defaultSession: NoteSession = {
+                id: 'sess_' + Date.now(),
+                name: 'General',
+                tweets: [],
+                createdAt: Date.now()
+            };
+            this.notesSessions = [defaultSession];
+            this.activeSessionId = defaultSession.id;
+            await chrome.storage.local.set({
+                xaiNotesSessions: this.notesSessions,
+                xaiActiveSessionId: this.activeSessionId
+            });
+        } else if (!this.activeSessionId || !this.notesSessions.find(s => s.id === this.activeSessionId)) {
+            this.activeSessionId = this.notesSessions[0].id;
+            await chrome.storage.local.set({ xaiActiveSessionId: this.activeSessionId });
+        }
+    }
+
+    private async handleNotesEnabledChange() {
+        if (this.notesEnabled) {
+            await this.initNotesState();
+            this.renderNotesBox();
+            this.injectGrabButtonsGlobal();
+        } else {
+            this.removeNotesBox();
+            this.removeGrabButtonsGlobal();
+        }
+    }
+
+    private injectGrabButtonsGlobal() {
+        if (!this.notesEnabled) return;
+        const tweets = document.querySelectorAll('article[data-testid="tweet"]');
+        tweets.forEach(tweet => this.injectGrabButtonToTweet(tweet as HTMLElement));
+    }
+
+    private removeGrabButtonsGlobal() {
+        const grabs = document.querySelectorAll('.xai-notes-grab-container');
+        grabs.forEach(el => el.remove());
+    }
+
+    private checkNodeForTweets(node: HTMLElement) {
+        if (!this.notesEnabled) return;
+        const tweets = node.querySelectorAll('article[data-testid="tweet"]');
+        tweets.forEach(tweet => this.injectGrabButtonToTweet(tweet as HTMLElement));
+        if (node.tagName === 'ARTICLE' && node.getAttribute('data-testid') === 'tweet') {
+            this.injectGrabButtonToTweet(node);
+        }
+    }
+
+    private injectGrabButtonToTweet(tweetEl: HTMLElement) {
+        if (!this.notesEnabled) return;
+        // Find action bar
+        const actionGroup = tweetEl.querySelector('div[role="group"]');
+        if (!actionGroup || actionGroup.querySelector('.xai-notes-grab-container')) {
+            return;
+        }
+
+        const grabContainer = document.createElement('div');
+        grabContainer.className = 'xai-notes-grab-container';
+
+        const grabBtn = document.createElement('button');
+        grabBtn.className = 'xai-notes-grab-btn';
+        grabBtn.type = 'button';
+        grabBtn.innerHTML = `
+            <svg class="grab-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M12 5v14M5 12h14"/></svg>
+            Grab It
+        `;
+        grabBtn.title = 'Grab post content for XAi Notes';
+        
+        grabBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await this.grabTweetContent(tweetEl, grabBtn);
+        });
+
+        grabContainer.appendChild(grabBtn);
+        actionGroup.appendChild(grabContainer);
+    }
+
+    private async grabTweetContent(tweetEl: HTMLElement, grabBtn: HTMLButtonElement) {
+        try {
+            const activeSession = this.notesSessions.find(s => s.id === this.activeSessionId);
+            if (!activeSession) {
+                alert('No active session found. Please enable XAi Notes.');
+                return;
+            }
+
+            if (activeSession.tweets.length >= 50) {
+                alert('Limit reached! Maximum 50 posts allowed per session.');
+                return;
+            }
+
+            // Get tweet text
+            const textEl = tweetEl.querySelector('[data-testid="tweetText"]');
+            const content = textEl?.textContent?.trim() || '';
+            if (!content) {
+                alert('Cannot grab a media-only tweet without text.');
+                return;
+            }
+
+            // Get author handle and name
+            const userNameEl = tweetEl.querySelector('[data-testid="User-Name"]');
+            const authorName = userNameEl?.querySelector('span')?.textContent || 'User';
+            const author = userNameEl?.querySelector('a[href*="/"]')?.textContent || '@User';
+
+            // Get post URL
+            const statusAnchor = tweetEl.querySelector('a[href*="/status/"]');
+            const postUrl = statusAnchor ? `https://x.com${statusAnchor.getAttribute('href')}` : window.location.href;
+            
+            const match = postUrl.match(/\/status\/(\d+)/);
+            const tweetId = match ? match[1] : 'tweet_' + Date.now() + Math.random().toString(36).substring(2, 5);
+
+            // Check if duplicate
+            if (activeSession.tweets.some(t => t.id === tweetId)) {
+                const originalHtml = grabBtn.innerHTML;
+                grabBtn.innerHTML = 'Already Grabbed';
+                grabBtn.disabled = true;
+                setTimeout(() => {
+                    grabBtn.innerHTML = originalHtml;
+                    grabBtn.disabled = false;
+                }, 1500);
+                return;
+            }
+
+            const newTweet: GrabbedTweet = {
+                id: tweetId,
+                author,
+                authorName,
+                content,
+                postUrl,
+                grabbedAt: Date.now()
+            };
+
+            activeSession.tweets.push(newTweet);
+            await chrome.storage.local.set({ xaiNotesSessions: this.notesSessions });
+
+            // Button feedback
+            const originalHtml = grabBtn.innerHTML;
+            grabBtn.innerHTML = '✅ Grabbed';
+            grabBtn.style.color = '#00ba7c';
+            setTimeout(() => {
+                grabBtn.innerHTML = originalHtml;
+                grabBtn.style.color = '';
+            }, 1500);
+
+        } catch (error) {
+            console.error('XAi Reply: Error grabbing tweet', error);
+            alert('Failed to grab post.');
+        }
+    }
+
+    private renderNotesBox() {
+        if (!this.notesEnabled) return;
+
+        if (this.notesContainerEl) {
+            this.updateNotesBoxStyleAndLayout();
+            this.refreshNotesBoxContent();
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'xai-notes-container';
+        this.notesContainerEl = container;
+        document.body.appendChild(container);
+
+        this.updateNotesBoxStyleAndLayout();
+        this.buildNotesBoxSkeleton();
+        this.setupNotesBoxListeners();
+        this.refreshNotesBoxContent();
+    }
+
+    private removeNotesBox() {
+        if (this.notesContainerEl) {
+            this.notesContainerEl.remove();
+            this.notesContainerEl = null;
+        }
+        document.documentElement.style.marginRight = '0';
+    }
+
+    private updateNotesBoxStyleAndLayout() {
+        if (!this.notesContainerEl) return;
+
+        const layout = this.notesSettings.layout || 'sidebar';
+        this.notesContainerEl.classList.remove('layout-sidebar', 'layout-floating');
+        this.notesContainerEl.classList.add(`layout-${layout}`);
+
+        if (layout === 'sidebar') {
+            this.notesContainerEl.style.left = '';
+            this.notesContainerEl.style.top = '';
+            this.notesContainerEl.style.right = '0';
+            this.notesContainerEl.style.width = '350px';
+            this.notesContainerEl.style.height = '100vh';
+            document.documentElement.style.marginRight = '350px';
+        } else {
+            document.documentElement.style.marginRight = '0';
+            this.notesContainerEl.style.right = '20px';
+            this.notesContainerEl.style.top = '70px';
+            this.notesContainerEl.style.left = 'auto';
+            this.notesContainerEl.style.width = '360px';
+            this.notesContainerEl.style.height = 'auto';
+        }
+    }
+
+    private buildNotesBoxSkeleton() {
+        if (!this.notesContainerEl) return;
+
+        this.notesContainerEl.innerHTML = `
+            <div class="xai-notes-header">
+                <div class="xai-notes-header-top">
+                    <span class="xai-notes-title">📋 XAi Notes</span>
+                    <div class="xai-notes-header-controls">
+                        <button class="xai-notes-layout-toggle" title="Switch Layout Mode" type="button">📌 Float</button>
+                        <button class="xai-notes-close" title="Disable Notes Panel" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                    </div>
+                </div>
+                <div class="xai-notes-sessions-bar">
+                    <button class="xai-notes-new-session-btn" title="Create New Session" type="button">+ New</button>
+                    <div class="xai-notes-sessions-badges"></div>
+                    <button class="xai-notes-clear-btn" title="Clear Sesi" type="button">🗑️ Clear</button>
+                </div>
+            </div>
+            
+            <div class="xai-notes-body">
+                <div class="xai-notes-tweets-list"></div>
+                
+                <div class="xai-notes-ai-output-section" style="display: none;">
+                    <div class="xai-notes-ai-output-header">
+                        <span>💡 AI Research Response:</span>
+                        <button class="xai-notes-ai-output-copy" type="button">📋 Copy</button>
+                    </div>
+                    <div class="xai-notes-ai-output-text"></div>
+                </div>
+            </div>
+
+            <div class="xai-notes-footer">
+                <div class="xai-notes-prompt-container">
+                    <textarea class="xai-notes-prompt-input" placeholder="Instruct AI to summarize/research grabbed posts..."></textarea>
+                </div>
+                <div class="xai-notes-footer-row">
+                    <select class="xai-notes-model-select"></select>
+                    <button class="xai-notes-generate-btn" type="button">Generate</button>
+                </div>
+            </div>
+        `;
+    }
+
+    private setupNotesBoxListeners() {
+        if (!this.notesContainerEl) return;
+
+        // Toggle layout
+        const layoutBtn = this.notesContainerEl.querySelector('.xai-notes-layout-toggle') as HTMLButtonElement;
+        layoutBtn.addEventListener('click', async () => {
+            const newLayout = this.notesSettings.layout === 'sidebar' ? 'floating' : 'sidebar';
+            this.notesSettings.layout = newLayout;
+            await chrome.storage.sync.set({ xaiNotesSettings: this.notesSettings });
+        });
+
+        // Close/Disable panel
+        const closeBtn = this.notesContainerEl.querySelector('.xai-notes-close') as HTMLButtonElement;
+        closeBtn.addEventListener('click', async () => {
+            this.notesEnabled = false;
+            this.notesSettings.enabled = false;
+            await chrome.storage.sync.set({ xaiNotesEnabled: false });
+        });
+
+        // Create new session
+        const newSessionBtn = this.notesContainerEl.querySelector('.xai-notes-new-session-btn') as HTMLButtonElement;
+        newSessionBtn.addEventListener('click', async () => {
+            const sessionName = prompt('Enter research session name:');
+            if (!sessionName || !sessionName.trim()) return;
+
+            const newSess: NoteSession = {
+                id: 'sess_' + Date.now(),
+                name: sessionName.trim(),
+                tweets: [],
+                createdAt: Date.now()
+            };
+            this.notesSessions.push(newSess);
+            this.activeSessionId = newSess.id;
+
+            await chrome.storage.local.set({
+                xaiNotesSessions: this.notesSessions,
+                xaiActiveSessionId: this.activeSessionId
+            });
+        });
+
+        // Clear active session tweets
+        const clearBtn = this.notesContainerEl.querySelector('.xai-notes-clear-btn') as HTMLButtonElement;
+        clearBtn.addEventListener('click', async () => {
+            const activeSession = this.notesSessions.find(s => s.id === this.activeSessionId);
+            if (!activeSession) return;
+
+            if (confirm(`Clear all grabbed posts in session "${activeSession.name}"?`)) {
+                activeSession.tweets = [];
+                activeSession.aiOutput = '';
+                await chrome.storage.local.set({ xaiNotesSessions: this.notesSessions });
+            }
+        });
+
+        // Draggable floating handler
+        const header = this.notesContainerEl.querySelector('.xai-notes-header') as HTMLElement;
+        let isDragging = false;
+        let startX = 0, startY = 0;
+        let elementX = 0, elementY = 0;
+
+        header.addEventListener('mousedown', (e) => {
+            if (this.notesSettings.layout !== 'floating') return;
+            if ((e.target as HTMLElement).closest('button, select, input, textarea')) return;
+
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            const rect = this.notesContainerEl!.getBoundingClientRect();
+            elementX = rect.left;
+            elementY = rect.top;
+
+            this.notesContainerEl!.style.right = 'auto';
+            this.notesContainerEl!.style.left = `${elementX}px`;
+            this.notesContainerEl!.style.top = `${elementY}px`;
+
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !this.notesContainerEl) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            this.notesContainerEl.style.left = `${elementX + dx}px`;
+            this.notesContainerEl.style.top = `${elementY + dy}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // AI Generation trigger
+        const generateBtn = this.notesContainerEl.querySelector('.xai-notes-generate-btn') as HTMLButtonElement;
+        const promptInput = this.notesContainerEl.querySelector('.xai-notes-prompt-input') as HTMLTextAreaElement;
+        const modelSelect = this.notesContainerEl.querySelector('.xai-notes-model-select') as HTMLSelectElement;
+
+        generateBtn.addEventListener('click', async () => {
+            const instruction = promptInput.value.trim();
+            if (!instruction) {
+                alert('Please enter an instruction prompt.');
+                return;
+            }
+
+            const activeSession = this.notesSessions.find(s => s.id === this.activeSessionId);
+            if (!activeSession || activeSession.tweets.length === 0) {
+                alert('Grab some posts first before running AI research.');
+                return;
+            }
+
+            try {
+                generateBtn.textContent = '⏳ Processing...';
+                generateBtn.disabled = true;
+
+                // Format grabbed tweets into context text block
+                const contextBlock = activeSession.tweets.map((t, idx) => {
+                    return `[Post #${idx + 1} by ${t.authorName} (${t.author})]\n${t.content}`;
+                }).join('\n\n=======================\n\n');
+
+                const response = await this.sendMessageWithRetry<any, any>({
+                    action: 'generateResearch',
+                    data: {
+                        prompt: instruction,
+                        context: contextBlock,
+                        model: modelSelect.value
+                    }
+                });
+
+                if (response.error) {
+                    throw new Error(response.error);
+                }
+
+                activeSession.aiOutput = response.reply;
+                await chrome.storage.local.set({ xaiNotesSessions: this.notesSessions });
+
+                promptInput.value = '';
+            } catch (err) {
+                console.error('XAi Research generation failed:', err);
+                alert('Research failed: ' + (err instanceof Error ? err.message : err));
+            } finally {
+                generateBtn.textContent = 'Generate';
+                generateBtn.disabled = false;
+            }
+        });
+
+        // Copy AI output trigger
+        const copyBtn = this.notesContainerEl.querySelector('.xai-notes-ai-output-copy') as HTMLButtonElement;
+        copyBtn.addEventListener('click', async () => {
+            const activeSession = this.notesSessions.find(s => s.id === this.activeSessionId);
+            if (activeSession && activeSession.aiOutput) {
+                try {
+                    await navigator.clipboard.writeText(activeSession.aiOutput);
+                    copyBtn.textContent = '✅ Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = '📋 Copy';
+                    }, 1500);
+                } catch (e) {
+                    console.error('Clipboard copy failed:', e);
+                }
+            }
+        });
+    }
+
+    private refreshNotesBoxContent() {
+        if (!this.notesContainerEl) return;
+
+        // Render badges
+        const badgesContainer = this.notesContainerEl.querySelector('.xai-notes-sessions-badges') as HTMLElement;
+        badgesContainer.innerHTML = '';
+
+        this.notesSessions.forEach(session => {
+            const badge = document.createElement('div');
+            badge.className = `xai-notes-session-badge${session.id === this.activeSessionId ? ' active' : ''}`;
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'session-name-text';
+            nameSpan.textContent = session.name;
+            nameSpan.title = session.name;
+            nameSpan.addEventListener('click', async () => {
+                this.activeSessionId = session.id;
+                await chrome.storage.local.set({ xaiActiveSessionId: this.activeSessionId });
+            });
+
+            badge.appendChild(nameSpan);
+
+            // Add delete button if not last session
+            if (this.notesSessions.length > 1) {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'session-badge-delete';
+                delBtn.innerHTML = '×';
+                delBtn.title = 'Delete Session';
+                delBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Are you sure you want to delete session "${session.name}"?`)) {
+                        this.notesSessions = this.notesSessions.filter(s => s.id !== session.id);
+                        if (this.activeSessionId === session.id) {
+                            this.activeSessionId = this.notesSessions[0].id;
+                        }
+                        await chrome.storage.local.set({
+                            xaiNotesSessions: this.notesSessions,
+                            xaiActiveSessionId: this.activeSessionId
+                        });
+                    }
+                });
+                badge.appendChild(delBtn);
+            }
+
+            badgesContainer.appendChild(badge);
+        });
+
+        // Update layout toggle text
+        const layoutBtn = this.notesContainerEl.querySelector('.xai-notes-layout-toggle') as HTMLButtonElement;
+        if (layoutBtn) {
+            layoutBtn.textContent = this.notesSettings.layout === 'sidebar' ? '📌 Float' : '🔲 Sidebar';
+        }
+
+        // Render tweets list of active session
+        const tweetsList = this.notesContainerEl.querySelector('.xai-notes-tweets-list') as HTMLElement;
+        tweetsList.innerHTML = '';
+
+        const activeSession = this.notesSessions.find(s => s.id === this.activeSessionId);
+        if (!activeSession || activeSession.tweets.length === 0) {
+            tweetsList.innerHTML = `
+                <div class="xai-notes-empty-state">
+                    No posts grabbed yet. Click the "Grab It" button under any post in your timeline. (Max 50 posts)
+                </div>
+            `;
+        } else {
+            // Show tweet cards
+            activeSession.tweets.forEach((tweet, index) => {
+                const card = document.createElement('div');
+                card.className = 'xai-notes-tweet-card';
+                card.innerHTML = `
+                    <div class="xai-notes-card-header">
+                        <span class="xai-notes-card-author" title="${tweet.authorName}">${tweet.authorName} <span class="author-handle">${tweet.author}</span></span>
+                        <button class="xai-notes-card-delete" title="Remove from notes" type="button">×</button>
+                    </div>
+                    <div class="xai-notes-card-body">${tweet.content}</div>
+                    <div class="xai-notes-card-footer">
+                        <a href="${tweet.postUrl}" target="_blank">🔗 View Original</a>
+                    </div>
+                `;
+
+                // Wire up delete card
+                const cardDelete = card.querySelector('.xai-notes-card-delete') as HTMLButtonElement;
+                cardDelete.addEventListener('click', async () => {
+                    activeSession.tweets.splice(index, 1);
+                    await chrome.storage.local.set({ xaiNotesSessions: this.notesSessions });
+                });
+
+                tweetsList.appendChild(card);
+            });
+        }
+
+        // Render AI output
+        const aiOutputSection = this.notesContainerEl.querySelector('.xai-notes-ai-output-section') as HTMLElement;
+        const aiOutputText = this.notesContainerEl.querySelector('.xai-notes-ai-output-text') as HTMLElement;
+
+        if (activeSession && activeSession.aiOutput) {
+            aiOutputText.textContent = activeSession.aiOutput;
+            aiOutputSection.style.display = 'block';
+        } else {
+            aiOutputSection.style.display = 'none';
+        }
+
+        // Render model select items inside Notes Box footer
+        const modelSelect = this.notesContainerEl.querySelector('.xai-notes-model-select') as HTMLSelectElement;
+        if (modelSelect.innerHTML === '') {
+            const currentModel = this.providerConfig?.model || 'openai/gpt-4o-mini';
+            let modelsToShow: any[] = [];
+            if (this.providerConfig?.mode === 'openrouter') {
+                modelsToShow = OPENROUTER_MODELS;
+            } else {
+                modelsToShow = this.cachedModels;
+            }
+
+            if (modelsToShow.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = currentModel;
+                opt.textContent = currentModel;
+                modelSelect.appendChild(opt);
+            } else {
+                modelsToShow.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.textContent = m.name || m.id;
+                    modelSelect.appendChild(opt);
+                });
+            }
+
+            modelSelect.value = currentModel;
+
+            modelSelect.addEventListener('change', async () => {
+                const selectedModel = modelSelect.value;
+                if (this.providerConfig) {
+                    this.providerConfig.model = selectedModel;
+                    await chrome.storage.sync.set({ providerConfig: this.providerConfig });
+                }
+            });
         }
     }
 }

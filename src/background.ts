@@ -50,6 +50,16 @@ class BackgroundService {
                         });
                     });
                 return true; // Will respond asynchronously
+            } else if (request.action === 'generateResearch') {
+                this.handleGenerateResearch(request.data, sendResponse)
+                    .catch(error => {
+                        console.error('Error in handleGenerateResearch:', error);
+                        sendResponse({
+                            reply: '',
+                            error: error instanceof Error ? error.message : 'Unknown error occurred'
+                        });
+                    });
+                return true; // Will respond asynchronously
             } else if (request.action === 'fetchModels') {
                 this.handleFetchModels(request.data, sendResponse)
                     .catch(error => {
@@ -342,6 +352,103 @@ class BackgroundService {
                 throw error;
             }
             throw new Error('Failed to communicate with LLM provider API.');
+        }
+    }
+
+    private async handleGenerateResearch(
+        data: { prompt: string, context: string, model?: string },
+        sendResponse: (response: { reply: string, error?: string }) => void
+    ) {
+        try {
+            const result = await chrome.storage.sync.get(['providerConfig', 'openrouterApiKey', 'model']);
+            let providerConfig: ProviderConfig = result.providerConfig;
+
+            if (!providerConfig) {
+                providerConfig = {
+                    mode: 'openrouter',
+                    openrouterApiKey: result.openrouterApiKey,
+                    model: result.model || 'openai/gpt-4o-mini'
+                };
+            }
+
+            const mode = providerConfig.mode || 'openrouter';
+            const model = data.model || providerConfig.model || 'openai/gpt-4o-mini';
+
+            let apiKey = '';
+            let baseUrl = '';
+            let headers: Record<string, string> = {
+                'Content-Type': 'application/json'
+            };
+
+            if (mode === 'custom' || mode.startsWith('custom-')) {
+                apiKey = providerConfig.customApiKey || '';
+                let rawBaseUrl = (providerConfig.customBaseUrl || '').trim();
+                if (rawBaseUrl.endsWith('/')) {
+                    rawBaseUrl = rawBaseUrl.slice(0, -1);
+                }
+                if (rawBaseUrl.endsWith('/chat/completions')) {
+                    baseUrl = rawBaseUrl;
+                } else {
+                    baseUrl = `${rawBaseUrl}/chat/completions`;
+                }
+                if (apiKey) {
+                    headers['Authorization'] = `Bearer ${apiKey}`;
+                }
+            } else {
+                apiKey = providerConfig.openrouterApiKey || '';
+                baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
+                if (!apiKey) {
+                    sendResponse({
+                        reply: '',
+                        error: 'OpenRouter API key not configured. Please set it in the extension popup.'
+                    });
+                    return;
+                }
+                headers['Authorization'] = `Bearer ${apiKey}`;
+                headers['HTTP-Referer'] = 'https://xaireply.extension';
+                headers['X-Title'] = 'XAi Reply Extension';
+            }
+
+            const systemPrompt = "You are a helpful AI research assistant. Your task is to analyze, summarize, synthesize, or extract key insights from the provided posts according to the user instructions. Be detailed, professional, and accurate.";
+            const userPrompt = `Here are the collected posts:\n\n${data.context}\n\nUser instructions:\n${data.prompt}`;
+
+            const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ],
+                    max_tokens: 1500, // higher limit for research output
+                    temperature: 0.3 // more factual/analytical
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({ error: { message: 'Unknown API error' } }));
+                throw new Error(error.error?.message || `Request failed with HTTP status ${response.status}`);
+            }
+
+            const resData = await response.json();
+            if (resData && resData.error) {
+                const errorMsg = typeof resData.error === 'string' ? resData.error : (resData.error.message || JSON.stringify(resData.error));
+                throw new Error(`API Error: ${errorMsg}`);
+            }
+
+            const replyContent = resData.choices?.[0]?.message?.content?.trim();
+            if (!replyContent) {
+                throw new Error('No reply content generated from the model API.');
+            }
+
+            sendResponse({ reply: replyContent });
+        } catch (error) {
+            console.error('Error generating research:', error);
+            sendResponse({
+                reply: '',
+                error: error instanceof Error ? error.message : 'Failed to generate research response'
+            });
         }
     }
 

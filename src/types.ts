@@ -299,4 +299,37 @@ export const OPENROUTER_MODELS: ModelOption[] = [
 ];
 
 // All available models (OpenRouter only)
-export const ALL_MODELS: ModelOption[] = OPENROUTER_MODELS; 
+export const ALL_MODELS: ModelOption[] = OPENROUTER_MODELS;
+
+// XAi Notes Feature Types
+export interface GrabbedTweet {
+    id: string;
+    author: string;
+    authorName: string;
+    content: string;
+    timestamp?: string;
+    postUrl?: string;
+    grabbedAt: number;
+}
+
+export interface NoteSession {
+    id: string;
+    name: string;
+    tweets: GrabbedTweet[];
+    aiOutput?: string;
+    createdAt: number;
+}
+
+export interface NotesSettings {
+    enabled: boolean;
+    layout: 'sidebar' | 'floating';
+}
+
+declare module './types' {
+    interface StorageData {
+        xaiNotesEnabled?: boolean;
+        xaiNotesSettings?: NotesSettings;
+        xaiNotesSessions?: NoteSession[];
+        xaiActiveSessionId?: string;
+    }
+} 
