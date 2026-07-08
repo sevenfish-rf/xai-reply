@@ -1005,20 +1005,41 @@ class XAiReply {
 
     private injectGrabButtonToTweet(tweetEl: HTMLElement) {
         if (!this.notesEnabled) return;
-        // Find action bar
-        const actionGroup = tweetEl.querySelector('div[role="group"]');
-        if (!actionGroup || actionGroup.querySelector('.xai-notes-grab-container')) {
+        
+        // Find caret (three-dots menu) in the top-right of the tweet header
+        const caret = tweetEl.querySelector('[data-testid="caret"]');
+        if (!caret) return;
+
+        // Find the parent container of caret
+        const headerContainer = caret.parentElement;
+        if (!headerContainer || headerContainer.querySelector('.xai-notes-grab-container')) {
             return;
         }
 
         const grabContainer = document.createElement('div');
         grabContainer.className = 'xai-notes-grab-container';
+        grabContainer.style.display = 'inline-flex';
+        grabContainer.style.alignItems = 'center';
+        grabContainer.style.marginRight = '8px';
 
         const grabBtn = document.createElement('button');
         grabBtn.className = 'xai-notes-grab-btn';
         grabBtn.type = 'button';
+        grabBtn.style.background = 'linear-gradient(135deg, #ffd700, #ff8800)';
+        grabBtn.style.border = 'none';
+        grabBtn.style.color = '#000000';
+        grabBtn.style.fontSize = '11px';
+        grabBtn.style.fontWeight = '800';
+        grabBtn.style.padding = '2px 8px';
+        grabBtn.style.borderRadius = '12px';
+        grabBtn.style.cursor = 'pointer';
+        grabBtn.style.display = 'inline-flex';
+        grabBtn.style.alignItems = 'center';
+        grabBtn.style.lineHeight = '1.2';
+        grabBtn.style.boxShadow = '0 1px 4px rgba(255, 215, 0, 0.2)';
+        
         grabBtn.innerHTML = `
-            <svg class="grab-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M12 5v14M5 12h14"/></svg>
+            <svg class="grab-icon" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle; stroke: #000000;"><path d="M12 5v14M5 12h14"/></svg>
             Grab It
         `;
         grabBtn.title = 'Grab post content for XAi Notes';
@@ -1030,7 +1051,28 @@ class XAiReply {
         });
 
         grabContainer.appendChild(grabBtn);
-        actionGroup.appendChild(grabContainer);
+
+        // Find Grok button inside the headerContainer
+        const grokButton = headerContainer.querySelector('[data-testid*="grok"]') || 
+                           headerContainer.querySelector('[aria-label*="Grok"]') ||
+                           headerContainer.querySelector('a[href*="grok"]');
+
+        let targetSibling: Element | null = null;
+        if (grokButton) {
+            let parent = grokButton;
+            // Go up until we reach a direct child of headerContainer
+            while (parent && parent.parentElement !== headerContainer) {
+                parent = parent.parentElement as HTMLElement;
+            }
+            targetSibling = parent;
+        }
+
+        if (!targetSibling) {
+            // Fallback to caret
+            targetSibling = caret;
+        }
+
+        headerContainer.insertBefore(grabContainer, targetSibling);
     }
 
     private async grabTweetContent(tweetEl: HTMLElement, grabBtn: HTMLButtonElement) {
@@ -1062,7 +1104,7 @@ class XAiReply {
             // Get post URL
             const statusAnchor = tweetEl.querySelector('a[href*="/status/"]');
             const postUrl = statusAnchor ? `https://x.com${statusAnchor.getAttribute('href')}` : window.location.href;
-            
+
             const match = postUrl.match(/\/status\/(\d+)/);
             const tweetId = match ? match[1] : 'tweet_' + Date.now() + Math.random().toString(36).substring(2, 5);
 
@@ -1070,9 +1112,11 @@ class XAiReply {
             if (activeSession.tweets.some(t => t.id === tweetId)) {
                 const originalHtml = grabBtn.innerHTML;
                 grabBtn.innerHTML = 'Already Grabbed';
+                grabBtn.classList.add('already-grabbed');
                 grabBtn.disabled = true;
                 setTimeout(() => {
                     grabBtn.innerHTML = originalHtml;
+                    grabBtn.classList.remove('already-grabbed');
                     grabBtn.disabled = false;
                 }, 1500);
                 return;
@@ -1093,10 +1137,10 @@ class XAiReply {
             // Button feedback
             const originalHtml = grabBtn.innerHTML;
             grabBtn.innerHTML = '✅ Grabbed';
-            grabBtn.style.color = '#00ba7c';
+            grabBtn.classList.add('grabbed');
             setTimeout(() => {
                 grabBtn.innerHTML = originalHtml;
-                grabBtn.style.color = '';
+                grabBtn.classList.remove('grabbed');
             }, 1500);
 
         } catch (error) {
@@ -1371,7 +1415,7 @@ class XAiReply {
         this.notesSessions.forEach(session => {
             const badge = document.createElement('div');
             badge.className = `xai-notes-session-badge${session.id === this.activeSessionId ? ' active' : ''}`;
-            
+
             const nameSpan = document.createElement('span');
             nameSpan.className = 'session-name-text';
             nameSpan.textContent = session.name;
