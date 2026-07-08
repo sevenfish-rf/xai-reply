@@ -23,6 +23,7 @@ class XAiReplyLinkedIn {
     private lastUrl: string = location.href;
     private providerConfig: any = null;
     private cachedModels: any[] = [];
+    private lastGeneration: { template: ReplyTemplate; inputElement: HTMLElement; customInstruction?: string } | null = null;
 
     constructor() {
         this.init();
@@ -491,6 +492,7 @@ class XAiReplyLinkedIn {
                 <div class="reply-bot-prompt-section">
                     <input type="text" class="reply-bot-custom-input" placeholder="Instruct AI (e.g. 'make it witty', 'reply in Spanish')..." />
                     <button class="reply-bot-custom-go" title="Generate with custom instructions">Go</button>
+                    <button class="reply-bot-regen-btn" title="Regenerate reply" style="display: none;">🔄</button>
                 </div>
 
                 <div class="reply-bot-options-row">
@@ -636,6 +638,27 @@ class XAiReplyLinkedIn {
         customInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 triggerCustomGen(e);
+            }
+        });
+
+        // Regenerate button
+        const regenBtn = buttonContainer.querySelector('.reply-bot-regen-btn') as HTMLButtonElement;
+        regenBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!this.lastGeneration) return;
+            regenBtn.disabled = true;
+            regenBtn.textContent = '⏳';
+            try {
+                await this.generatePostReplyInternal(
+                    regenBtn,
+                    this.lastGeneration.template,
+                    this.lastGeneration.inputElement,
+                    this.lastGeneration.customInstruction
+                );
+            } finally {
+                regenBtn.textContent = '🔄';
+                regenBtn.disabled = false;
             }
         });
 
@@ -791,6 +814,8 @@ class XAiReplyLinkedIn {
     }
 
     private async generatePostReplyInternal(button: HTMLButtonElement, template: ReplyTemplate, originalInputElement: HTMLElement, customInstruction?: string) {
+        // Save for regeneration
+        this.lastGeneration = { template, inputElement: originalInputElement, customInstruction };
         const originalText = button.textContent;
 
         // Check if chrome APIs are available before proceeding
@@ -927,6 +952,12 @@ class XAiReplyLinkedIn {
             // Reset button
             button.textContent = originalText;
             button.disabled = false;
+
+            // Show regenerate button
+            const regenBtn = buttonContainer?.querySelector('.reply-bot-regen-btn') as HTMLButtonElement;
+            if (regenBtn) {
+                regenBtn.style.display = 'inline-flex';
+            }
 
         } catch (error) {
             console.error('Error generating LinkedIn post reply:', error);

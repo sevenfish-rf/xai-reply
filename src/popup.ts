@@ -30,12 +30,18 @@ class PopupManager {
     private xSettingsTab!: HTMLButtonElement;
     private linkedinSettingsTab!: HTMLButtonElement;
     private draftsTab!: HTMLButtonElement;
+    private settingsTab!: HTMLButtonElement;
     private generalContent!: HTMLElement;
     private xSettingsContent!: HTMLElement;
     private linkedinSettingsContent!: HTMLElement;
     private draftsContent!: HTMLElement;
+    private settingsContent!: HTMLElement;
     private draftsList!: HTMLElement;
     private clearAllDraftsButton!: HTMLButtonElement;
+    private exportAllButton!: HTMLButtonElement;
+    private importButton!: HTMLButtonElement;
+    private importFileInput!: HTMLInputElement;
+    private settingsStatus!: HTMLElement;
 
     // X Settings
     private xSystemPromptInput!: HTMLTextAreaElement;
@@ -128,12 +134,18 @@ class PopupManager {
         this.xSettingsTab = document.getElementById('xSettingsTab') as HTMLButtonElement;
         this.linkedinSettingsTab = document.getElementById('linkedinSettingsTab') as HTMLButtonElement;
         this.draftsTab = document.getElementById('draftsTab') as HTMLButtonElement;
+        this.settingsTab = document.getElementById('settingsTab') as HTMLButtonElement;
         this.generalContent = document.getElementById('generalContent') as HTMLElement;
         this.xSettingsContent = document.getElementById('xSettingsContent') as HTMLElement;
         this.linkedinSettingsContent = document.getElementById('linkedinSettingsContent') as HTMLElement;
         this.draftsContent = document.getElementById('draftsContent') as HTMLElement;
+        this.settingsContent = document.getElementById('settingsContent') as HTMLElement;
         this.draftsList = document.getElementById('draftsList') as HTMLElement;
         this.clearAllDraftsButton = document.getElementById('clearAllDraftsButton') as HTMLButtonElement;
+        this.exportAllButton = document.getElementById('exportAllButton') as HTMLButtonElement;
+        this.importButton = document.getElementById('importButton') as HTMLButtonElement;
+        this.importFileInput = document.getElementById('importFileInput') as HTMLInputElement;
+        this.settingsStatus = document.getElementById('settingsStatus') as HTMLElement;
 
         // X Settings elements
         this.xSystemPromptInput = document.getElementById('xSystemPrompt') as HTMLTextAreaElement;
@@ -230,8 +242,14 @@ class PopupManager {
         this.xSettingsTab.addEventListener('click', () => this.switchTab('x'));
         this.linkedinSettingsTab.addEventListener('click', () => this.switchTab('linkedin'));
         this.draftsTab.addEventListener('click', () => this.switchTab('drafts'));
+        this.settingsTab.addEventListener('click', () => this.switchTab('settings'));
 
         this.clearAllDraftsButton.addEventListener('click', () => this.clearAllDrafts());
+
+        // Settings tab listeners
+        this.exportAllButton.addEventListener('click', () => this.exportAllData());
+        this.importButton.addEventListener('click', () => this.importFileInput.click());
+        this.importFileInput.addEventListener('change', (e) => this.handleImportFile(e));
 
         // X Settings listeners
         this.xSystemPromptInput.addEventListener('change', () => this.saveXSettings());
@@ -500,18 +518,20 @@ class PopupManager {
         }
     }
 
-    private switchTab(tab: 'general' | 'x' | 'linkedin' | 'drafts') {
+    private switchTab(tab: 'general' | 'x' | 'linkedin' | 'drafts' | 'settings') {
         // Update tab buttons
         this.generalTab.classList.toggle('active', tab === 'general');
         this.xSettingsTab.classList.toggle('active', tab === 'x');
         this.linkedinSettingsTab.classList.toggle('active', tab === 'linkedin');
         this.draftsTab.classList.toggle('active', tab === 'drafts');
+        this.settingsTab.classList.toggle('active', tab === 'settings');
 
         // Update content visibility
         this.generalContent.classList.toggle('active', tab === 'general');
         this.xSettingsContent.classList.toggle('active', tab === 'x');
         this.linkedinSettingsContent.classList.toggle('active', tab === 'linkedin');
         this.draftsContent.classList.toggle('active', tab === 'drafts');
+        this.settingsContent.classList.toggle('active', tab === 'settings');
 
         if (tab === 'drafts') {
             this.loadDrafts();
@@ -1160,6 +1180,115 @@ class PopupManager {
     }
 
 
+    // ── Export / Import ──────────────────────────────────────────
+
+    private showSettingsStatus(message: string, type: 'success' | 'error') {
+        this.settingsStatus.textContent = message;
+        this.settingsStatus.className = `settings-status ${type}`;
+        this.settingsStatus.style.display = 'block';
+        setTimeout(() => {
+            this.settingsStatus.style.display = 'none';
+        }, 4000);
+    }
+
+    private async exportAllData() {
+        try {
+            const result = await chrome.storage.sync.get(['xSettings', 'linkedinSettings', 'linkedinTemplates']);
+
+            const exportPayload = {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                xSettings: result.xSettings || null,
+                linkedinSettings: result.linkedinSettings || null,
+                linkedinConnectionTemplates: result.linkedinTemplates || null
+            };
+
+            const jsonString = JSON.stringify(exportPayload, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const now = new Date();
+            const datePart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const filename = `xai-reply-backup-${datePart}.json`;
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            this.showSettingsStatus(`Exported to ${filename}`, 'success');
+        } catch (error) {
+            console.error('Export failed:', error);
+            this.showSettingsStatus('Export failed: ' + error, 'error');
+        }
+    }
+
+    private async handleImportFile(event: Event) {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+
+            // Validate structure
+            if (!data.xSettings && !data.linkedinSettings && !data.linkedinConnectionTemplates) {
+                this.showSettingsStatus('Invalid file: no recognized data found.', 'error');
+                input.value = '';
+                return;
+            }
+
+            if (!confirm('This will overwrite your current templates, system prompts, and advanced settings for both X and LinkedIn. Continue?')) {
+                input.value = '';
+                return;
+            }
+
+            const updatePayload: Record<string, any> = {};
+
+            if (data.xSettings) {
+                updatePayload.xSettings = data.xSettings;
+                this.xTemplates = data.xSettings.templates || this.xTemplates;
+                if (data.xSettings.systemPrompt) {
+                    this.xSystemPromptInput.value = data.xSettings.systemPrompt;
+                }
+                if (data.xSettings.advancedSettings) {
+                    this.loadAdvancedSettings('x', data.xSettings.advancedSettings);
+                }
+            }
+
+            if (data.linkedinSettings) {
+                updatePayload.linkedinSettings = data.linkedinSettings;
+                this.linkedinPostTemplates = data.linkedinSettings.templates || this.linkedinPostTemplates;
+                if (data.linkedinSettings.systemPrompt) {
+                    this.linkedinSystemPromptInput.value = data.linkedinSettings.systemPrompt;
+                }
+                if (data.linkedinSettings.advancedSettings) {
+                    this.loadAdvancedSettings('linkedin', data.linkedinSettings.advancedSettings);
+                }
+            }
+
+            if (data.linkedinConnectionTemplates) {
+                updatePayload.linkedinTemplates = data.linkedinConnectionTemplates;
+                this.linkedinConnectionTemplates = data.linkedinConnectionTemplates;
+            }
+
+            await chrome.storage.sync.set(updatePayload);
+
+            this.updateAllRangeValues();
+            this.renderTemplates();
+
+            this.showSettingsStatus('Import successful! All data restored.', 'success');
+        } catch (error) {
+            console.error('Import failed:', error);
+            this.showSettingsStatus('Import failed: invalid JSON file.', 'error');
+        }
+
+        input.value = '';
+    }
 }
 
 // Initialize popup when DOM is ready

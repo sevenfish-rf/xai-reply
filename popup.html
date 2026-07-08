@@ -23,6 +23,7 @@
         <button id="xSettingsTab" class="tab-button">X</button>
         <button id="linkedinSettingsTab" class="tab-button">LinkedIn</button>
         <button id="draftsTab" class="tab-button">Drafts</button>
+        <button id="settingsTab" class="tab-button">⚙️</button>
       </div>
 
       <div id="generalContent" class="tab-content active">
@@ -302,6 +303,23 @@
               No saved drafts yet. Click "Save Draft" in X when generating replies.
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div id="settingsContent" class="tab-content">
+        <div class="settings-data-section group-section-card">
+          <h2>📦 Template Data</h2>
+          <p style="color: #8b98a5; font-size: 12px; margin: 0 0 16px 0; line-height: 1.5;">
+            Export all your templates, system prompts, and advanced settings for both X and LinkedIn as a single JSON file. 
+            Use Import to restore from a previous backup.
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="exportAllButton" class="settings-action-btn export-btn" type="button">📥 Export All</button>
+            <button id="importButton" class="settings-action-btn import-btn" type="button">📤 Import</button>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;" />
+          </div>
+          <div id="settingsStatus" class="settings-status" style="display: none;"></div>
         </div>
       </div>
 

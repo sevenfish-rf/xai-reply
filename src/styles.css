@@ -272,6 +272,38 @@ body[style*="background-color: rgb(255, 255, 255)"] .reply-bot-custom-input:focu
   cursor: not-allowed;
 }
 
+/* Regenerate Button */
+.reply-bot-regen-btn {
+  background: rgba(255, 170, 0, 0.12);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.25);
+  border-radius: 20px;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.reply-bot-regen-btn:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.22);
+  box-shadow: 0 4px 12px rgba(255, 170, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.reply-bot-regen-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.95);
+}
+
+.reply-bot-regen-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Options Row */
 .reply-bot-options-row {
   display: flex !important;
@@ -1735,4 +1767,65 @@ body.dark .draft-reply-text {
 
 .draft-action-btn.delete-btn:hover {
   background: rgba(244, 33, 46, 0.1);
+}
+
+/* ── Settings Tab ─────────────────────────────────── */
+.settings-data-section {
+  padding: 20px;
+}
+
+.settings-action-btn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 170, 0, 0.25);
+  background: rgba(255, 170, 0, 0.08);
+  color: #ffaa00;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-action-btn:hover {
+  background: rgba(255, 170, 0, 0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 170, 0, 0.15);
+}
+
+.settings-action-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.settings-action-btn.import-btn {
+  border-color: rgba(29, 155, 240, 0.25);
+  background: rgba(29, 155, 240, 0.08);
+  color: #1d9bf0;
+}
+
+.settings-action-btn.import-btn:hover {
+  background: rgba(29, 155, 240, 0.18);
+  box-shadow: 0 4px 12px rgba(29, 155, 240, 0.15);
+}
+
+.settings-status {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.settings-status.success {
+  background: rgba(0, 186, 124, 0.1);
+  color: #00ba7c;
+  border: 1px solid rgba(0, 186, 124, 0.2);
+}
+
+.settings-status.error {
+  background: rgba(244, 33, 46, 0.1);
+  color: #f4212e;
+  border: 1px solid rgba(244, 33, 46, 0.2);
 }

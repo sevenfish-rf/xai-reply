@@ -5,6 +5,7 @@ class XAiReply {
     private templates: ReplyTemplate[] = DEFAULT_X_TEMPLATES;
     private buttonsInjected = new WeakSet<HTMLElement>();
     private observer: MutationObserver | null = null;
+    private lastGeneration: { template: ReplyTemplate; textArea: HTMLElement; customInstruction?: string } | null = null;
 
     constructor() {
         this.init();
@@ -239,6 +240,7 @@ class XAiReply {
                 <div class="reply-bot-prompt-section">
                     <input type="text" class="reply-bot-custom-input" placeholder="Instruct AI (e.g. 'make it witty', 'reply in Spanish')..." />
                     <button class="reply-bot-custom-go" title="Generate with custom instructions">Go</button>
+                    <button class="reply-bot-regen-btn" title="Regenerate reply" style="display: none;">🔄</button>
                 </div>
 
                 <div class="reply-bot-options-row">
@@ -387,6 +389,27 @@ class XAiReply {
             }
         });
 
+        // Regenerate button
+        const regenBtn = buttonContainer.querySelector('.reply-bot-regen-btn') as HTMLButtonElement;
+        regenBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!this.lastGeneration) return;
+            regenBtn.disabled = true;
+            regenBtn.textContent = '⏳';
+            try {
+                await this.generateReplyInternal(
+                    regenBtn,
+                    this.lastGeneration.template,
+                    this.lastGeneration.textArea,
+                    this.lastGeneration.customInstruction
+                );
+            } finally {
+                regenBtn.textContent = '🔄';
+                regenBtn.disabled = false;
+            }
+        });
+
         // Handle template category tabs and rendering
         const templatesGrid = buttonContainer.querySelector('.reply-bot-templates-grid') as HTMLElement;
         const categoryTabs = buttonContainer.querySelectorAll('.reply-bot-templates-tab');
@@ -489,6 +512,8 @@ class XAiReply {
     }
 
     private async generateReplyInternal(button: HTMLButtonElement, template: ReplyTemplate, textArea: HTMLElement, customInstruction?: string) {
+        // Save for regeneration
+        this.lastGeneration = { template, textArea, customInstruction };
         const originalText = button.innerHTML;
         let currentTextArea: HTMLElement | null = textArea;
 
@@ -655,6 +680,12 @@ class XAiReply {
             // Reset button
             button.innerHTML = originalText;
             button.disabled = false;
+
+            // Show regenerate button
+            const regenBtn = buttonContainer?.querySelector('.reply-bot-regen-btn') as HTMLButtonElement;
+            if (regenBtn) {
+                regenBtn.style.display = 'inline-flex';
+            }
 
         } catch (error) {
             console.error('Error generating reply:', error);
