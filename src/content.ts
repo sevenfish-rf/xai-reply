@@ -470,28 +470,30 @@ class XAiReply {
             'funny': 'Add clean humor and light wit',
             'agree': 'Validate and build on the post',
             'sarcastic': 'Reply with sharp ironic humor',
-            'insightful': 'Share deep value or thoughts',
+            'insight': 'Share deep value or thoughts',
             'disagree': 'Politely debate perspective',
             'promote': 'Pitch a value proposition/link',
             'congrats': 'Celebrate achievements & wins',
-            'respond': 'Standard friendly reaction',
+            'response': 'Standard friendly reaction',
             'encourage': 'Motivate and show positive vibes'
+        };
+
+        const getXCategory = (t: ReplyTemplate) => {
+            if (t.category) return t.category;
+            const positive = ['agree', 'congrats', 'encourage', 'promote'];
+            const brainy = ['question', 'insight', 'response'];
+            if (positive.includes(t.id)) return 'positive';
+            if (brainy.includes(t.id)) return 'brainy';
+            return 'spiced';
         };
 
         const renderCategoryTemplates = (category: string) => {
             templatesGrid.innerHTML = '';
 
-            // Map categories to list of template IDs
-            let allowedIds: string[] = [];
-            if (category === 'positive') {
-                allowedIds = ['agree', 'congrats', 'encourage', 'promote'];
-            } else if (category === 'brainy') {
-                allowedIds = ['question', 'insightful', 'respond'];
-            } else {
-                allowedIds = ['funny', 'sarcastic', 'disagree'];
-            }
-
-            const filtered = this.templates.filter(t => allowedIds.includes(t.id));
+            const filtered = this.templates.filter(t => {
+                const cat = getXCategory(t);
+                return cat === category;
+            });
 
             filtered.forEach(template => {
                 const card = document.createElement('button');
@@ -1112,11 +1114,15 @@ class XAiReply {
             if (activeSession.tweets.some(t => t.id === tweetId)) {
                 const originalHtml = grabBtn.innerHTML;
                 grabBtn.innerHTML = 'Already Grabbed';
+                grabBtn.style.background = '';
+                grabBtn.style.color = '';
                 grabBtn.classList.add('already-grabbed');
                 grabBtn.disabled = true;
                 setTimeout(() => {
                     grabBtn.innerHTML = originalHtml;
                     grabBtn.classList.remove('already-grabbed');
+                    grabBtn.style.background = 'linear-gradient(135deg, #ffd700, #ff8800)';
+                    grabBtn.style.color = '#000000';
                     grabBtn.disabled = false;
                 }, 1500);
                 return;
@@ -1137,10 +1143,14 @@ class XAiReply {
             // Button feedback
             const originalHtml = grabBtn.innerHTML;
             grabBtn.innerHTML = '✅ Grabbed';
+            grabBtn.style.background = '';
+            grabBtn.style.color = '';
             grabBtn.classList.add('grabbed');
             setTimeout(() => {
                 grabBtn.innerHTML = originalHtml;
                 grabBtn.classList.remove('grabbed');
+                grabBtn.style.background = 'linear-gradient(135deg, #ffd700, #ff8800)';
+                grabBtn.style.color = '#000000';
             }, 1500);
 
         } catch (error) {

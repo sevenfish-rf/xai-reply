@@ -1301,12 +1301,29 @@ body[style*="background-color: rgb(255, 255, 255)"] select#providerModeSelect op
 }
 
 .template-field input,
-.template-field textarea {
-  padding: 6px;
+.template-field textarea,
+.template-category-select {
+  padding: 8px 12px;
   font-size: 13px;
-  border: 1px solid #cfd9de;
-  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
   width: 100%;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #e7e9ea;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.template-field input:focus,
+.template-field textarea:focus,
+.template-category-select:focus {
+  border-color: #ffaa00;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.template-category-select option {
+  background-color: #16181c !important;
+  color: #e7e9ea !important;
 }
 
 .template-field textarea {

@@ -1039,6 +1039,31 @@ class PopupManager {
     private createTemplateElement(template: ReplyTemplate, index: number, platform: 'x' | 'linkedinConnection' | 'linkedinPost'): HTMLElement {
         const div = document.createElement('div');
         div.className = 'template-item';
+
+        const getXCategory = (t: ReplyTemplate) => {
+            if (t.category) return t.category;
+            const positive = ['agree', 'congrats', 'encourage', 'promote'];
+            const brainy = ['question', 'insight', 'response'];
+            if (positive.includes(t.id)) return 'positive';
+            if (brainy.includes(t.id)) return 'brainy';
+            return 'spiced';
+        };
+        const currentCategory = platform === 'x' ? getXCategory(template) : '';
+
+        let categoryFieldHtml = '';
+        if (platform === 'x') {
+            categoryFieldHtml = `
+                <div class="template-field">
+                    <label>Category:</label>
+                    <select class="template-category-select" style="background-color: rgba(255, 255, 255, 0.05); color: #e7e9ea; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 6px 10px; font-size: 13px; outline: none; cursor: pointer; width: 100%; margin-top: 4px;">
+                        <option value="positive" ${currentCategory === 'positive' ? 'selected' : ''}>Positive</option>
+                        <option value="brainy" ${currentCategory === 'brainy' ? 'selected' : ''}>Brainy</option>
+                        <option value="spiced" ${currentCategory === 'spiced' ? 'selected' : ''}>Spiced</option>
+                    </select>
+                </div>
+            `;
+        }
+
         div.innerHTML = `
             <div class="template-header">
                 <div class="template-name">
@@ -1059,6 +1084,7 @@ class PopupManager {
                     <label>Icon:</label>
                     <input type="text" class="template-icon-input" value="${template.icon || ''}">
                 </div>
+                ${categoryFieldHtml}
                 <div class="template-field">
                     <label>Prompt:</label>
                     <textarea class="template-prompt-input">${template.prompt}</textarea>
@@ -1088,12 +1114,19 @@ class PopupManager {
             const iconInput = div.querySelector('.template-icon-input') as HTMLInputElement;
             const promptInput = div.querySelector('.template-prompt-input') as HTMLTextAreaElement;
 
-            this.updateTemplate(index, {
+            const updatedTemplate: ReplyTemplate = {
                 ...template,
                 name: nameInput.value,
                 icon: iconInput.value,
                 prompt: promptInput.value
-            }, platform);
+            };
+
+            if (platform === 'x') {
+                const categorySelect = div.querySelector('.template-category-select') as HTMLSelectElement;
+                updatedTemplate.category = categorySelect.value as 'positive' | 'brainy' | 'spiced';
+            }
+
+            this.updateTemplate(index, updatedTemplate, platform);
 
             fields.style.display = 'none';
         });
@@ -1138,6 +1171,7 @@ class PopupManager {
         };
 
         if (platform === 'x') {
+            newTemplate.category = 'positive';
             this.xTemplates.push(newTemplate);
             await this.saveXSettings();
         } else if (platform === 'linkedinConnection') {

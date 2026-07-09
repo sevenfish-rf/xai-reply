@@ -5,6 +5,7 @@ export interface ReplyTemplate {
     name: string;
     prompt: string;
     icon?: string;
+    category?: 'positive' | 'brainy' | 'spiced';
 }
 
 export interface GenerateReplyRequest {
@@ -190,61 +191,71 @@ export const DEFAULT_X_TEMPLATES: ReplyTemplate[] = [
         id: 'question',
         name: 'Question',
         prompt: 'Generate a 1 sentence concise, thoughtful question in response to this tweet. Be curious and engaging.',
-        icon: '❓'
+        icon: '❓',
+        category: 'brainy'
     },
     {
         id: 'funny',
         name: 'Funny',
         prompt: 'Generate a 1 sentence concise, witty and humorous response to this tweet. Be clever but not offensive.',
-        icon: '😄'
+        icon: '😄',
+        category: 'spiced'
     },
     {
         id: 'agree',
         name: 'Agree',
         prompt: 'Generate a 1 sentence concise, supportive response that agrees with and builds upon the tweet.',
-        icon: '👍'
+        icon: '👍',
+        category: 'positive'
     },
     {
         id: 'sarcastic',
         name: 'Sarcastic',
         prompt: 'Generate a 1 sentence concise, sarcastic response to the tweet. Be clever but not offensive.',
-        icon: '🤨'
+        icon: '🤨',
+        category: 'spiced'
     },
     {
         id: 'insight',
         name: 'Insightful',
         prompt: 'Generate a concise response that adds valuable insight or a different perspective to the tweet. If it is a technical post, add a technical insight.',
-        icon: '💡'
+        icon: '💡',
+        category: 'brainy'
     },
     {
         id: 'disagree',
         name: 'Disagree',
         prompt: 'Generate a concise response that disagrees with the tweet. Be respectful and/or constructive.',
-        icon: '👎'
+        icon: '👎',
+        category: 'spiced'
     },
     {
         id: 'promote',
         name: 'Promote',
         prompt: 'Generate a concise response that promotes my product (always put the link in the response!)',
-        icon: '🚀'
+        icon: '🚀',
+        category: 'positive'
     },
     {
         id: 'congrats',
         name: 'Congrats',
         prompt: 'Generate a 1 sentence concise, congratulatory response to the tweet. Be positive and/or constructive.',
-        icon: '🎉'
+        icon: '🎉',
+        category: 'positive'
     },
     {
         id: 'response',
         name: 'Respond',
         prompt: 'Generate a 1 sentence concise, response to the tweet. Be positive and/or constructive.',
-        icon: '💬'
+        icon: '💬',
+        category: 'brainy'
     },
     {
         id: 'encourage',
         name: 'Encourage',
         prompt: 'Generate a 1 sentence concise, encouraging response to the tweet. Be positive and/or constructive.',
-        icon: '💪'
+        icon: '💪',
+        category: 'positive'
     }
 ];
 
