@@ -540,8 +540,14 @@ class XAiReply {
     }
 
     private async sendMessageWithRetry<TRequest, TResponse>(request: TRequest, maxRetries = 3, delayMs = 200): Promise<TResponse> {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+            throw new Error('Extension context invalidated. Please refresh the page.');
+        }
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
+                if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+                    throw new Error('Extension context invalidated. Please refresh the page.');
+                }
                 const response = await chrome.runtime.sendMessage(request) as TResponse;
                 return response;
             } catch (error) {
